@@ -1,9 +1,11 @@
 import auth0 from "auth0-js";
 
-
-// dotenv.config()
-
 export const isBrowser = typeof window !== 'undefined';
+
+const tokens = {
+    idToken: false,
+    accessToken: false,
+}
 
 // Only instantiate Auth0 if we’re in the browser.
 const auth = isBrowser
@@ -17,7 +19,30 @@ const auth = isBrowser
     })
   : {};
 
+//to avoid any attack vectors we store accessToken and idToken locally in memory
 export const login = () => {
     auth.authorize()
 }
 
+
+const setSession = (cb = () => {}) =>(err, authResult) => {
+    if(err) {
+       if(err.error === 'login_required') {
+            login();
+        }
+    }
+    if(authResult && authResult.accessToken && authResult.idToken){
+    tokens.idToken = authResult.idToken
+    tokens.accessToken = authResult.accessToken
+
+        cb()
+    }
+}
+
+export const checkSession = (callback) => {
+    auth.checkSession({}, setSession(callback))
+}
+
+export const handleAuthentication = () => {
+    auth.parseHash(setSession) 
+}
